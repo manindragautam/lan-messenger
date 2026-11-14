@@ -1,0 +1,9 @@
+{
+  "tasks": {
+    "start": "deno desktop --allow-net --allow-read --allow-write --allow-sys --allow-env --allow-run main.ts",
+    "dev": "deno desktop --hmr --allow-net --allow-read --allow-write --allow-sys --allow-env --allow-run main.ts",
+    "web": "deno run --allow-net --allow-read --allow-write --allow-sys --allow-env --allow-run main.ts",
+    "build": "deno desktop --include index.html --include style.css --include app.js --output LanMessenger --allow-net --allow-read --allow-write --allow-sys --allow-env --allow-run main.ts",
+    "check": "deno check --desktop main.ts"
+  }
+}

@@ -1,0 +1,23 @@
+# Compiled binaries and application bundles
+*.app/
+*.dylib
+*.exe
+*.msi
+*.dmg
+*.deb
+*.rpm
+*.AppImage
+
+# OS metadata
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Deno & cache artifacts
+.deno/
+*.tmp
+*.tmp-*

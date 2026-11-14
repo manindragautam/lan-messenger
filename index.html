@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LAN Messenger 🦕</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+      <!-- App Header & Identity -->
+      <div class="sidebar-header">
+        <div class="app-branding">
+          <span class="dino-logo">🦕</span>
+          <div class="branding-text">
+            <h2>LAN Messenger</h2>
+            <div class="network-badge" id="networkBadge" title="Click to copy LAN address">
+              <span class="status-dot"></span>
+              <span id="networkAddressText">Detecting LAN...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Profile Card -->
+      <div class="profile-card" id="myProfileCard">
+        <div class="avatar-wrapper">
+          <div class="user-avatar" id="myAvatarDisplay">🦕</div>
+          <span class="status-indicator status-online" id="myStatusIndicator"></span>
+        </div>
+        <div class="user-details">
+          <span class="user-name" id="myDisplayName">Loading...</span>
+          <span class="user-status-msg" id="myStatusMsgDisplay">Available</span>
+        </div>
+        <button class="icon-btn edit-profile-btn" id="openSettingsBtn" title="Profile & Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Quick Discovery Actions -->
+      <div class="discovery-actions">
+        <button class="action-btn" id="openDirectConnectBtn" title="Connect to specific IP:Port">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Direct Connect
+        </button>
+        <button class="action-btn" id="openSubnetScanBtn" title="Scan local subnet for peers">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          Scan LAN
+        </button>
+      </div>
+
+      <!-- Sidebar Navigation: Channels & Peers -->
+      <div class="sidebar-nav">
+        <!-- Channels Section -->
+        <div class="nav-section">
+          <div class="section-title">CHANNELS</div>
+          <div class="channel-list" id="channelList">
+            <button class="nav-item active" data-channel="general">
+              <span class="nav-icon">#</span>
+              <span class="nav-label">general</span>
+              <span class="unread-pill hidden" data-unread="general">0</span>
+            </button>
+            <button class="nav-item" data-channel="random">
+              <span class="nav-icon">#</span>
+              <span class="nav-label">random</span>
+              <span class="unread-pill hidden" data-unread="random">0</span>
+            </button>
+            <button class="nav-item" data-channel="announcements">
+              <span class="nav-icon">📢</span>
+              <span class="nav-label">announcements</span>
+              <span class="unread-pill hidden" data-unread="announcements">0</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Discovered Peers Section -->
+        <div class="nav-section">
+          <div class="section-title-row">
+            <span class="section-title">LAN PEERS</span>
+            <span class="peer-count-badge" id="peerCountBadge">0</span>
+          </div>
+          <div class="peer-list" id="peerList">
+            <div class="empty-peers-notice" id="emptyPeersNotice">
+              <span class="pulse-radar">📡</span>
+              <p>Listening for LAN peers...</p>
+              <small>Other machines running LAN Messenger on Wi-Fi will appear here.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar Footer Controls -->
+      <div class="sidebar-footer">
+        <button class="footer-btn" id="themeToggleBtn" title="Toggle Dark/Light Mode">
+          <span id="themeIcon">🌙</span>
+        </button>
+        <button class="footer-btn" id="soundToggleBtn" title="Toggle Notification Chimes">
+          <span id="soundIcon">🔔</span>
+        </button>
+        <button class="footer-btn" id="helpInfoBtn" title="Help & Architecture Info">
+          <span>ℹ️</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Chat View Area -->
+    <main class="chat-viewport">
+      <!-- Chat Header -->
+      <header class="chat-header">
+        <div class="chat-info">
+          <div class="chat-title-group">
+            <span class="chat-avatar-icon" id="currentChatAvatar">#</span>
+            <div>
+              <h1 class="chat-title" id="currentChatTitle">general</h1>
+              <span class="chat-subtitle" id="currentChatSubtitle">LAN Broadcast • Everyone on your local network</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-header-actions">
+          <!-- In-Chat Search Toggle -->
+          <button class="icon-btn" id="toggleSearchBtn" title="Search messages (Ctrl+F)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </button>
+          <!-- Export Chat -->
+          <button class="icon-btn" id="exportChatBtn" title="Export Chat Transcript">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
+          <!-- Clear Channel -->
+          <button class="icon-btn" id="clearChatBtn" title="Clear Chat Display">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- In-Chat Search Bar (Collapsible) -->
+      <div class="search-bar-container hidden" id="searchBarContainer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Search in this channel..." autocomplete="off">
+        <span class="search-count" id="searchCount">0 results</span>
+        <button class="icon-btn close-search-btn" id="closeSearchBtn">✕</button>
+      </div>
+
+      <!-- Messages Scroll Area -->
+      <div class="messages-container" id="messagesContainer">
+        <div class="messages-welcome">
+          <div class="welcome-dino">🦕</div>
+          <h3>Welcome to #general!</h3>
+          <p>This is the start of the local network broadcast channel. All peers connected on the same LAN or Wi-Fi will receive messages posted here in real-time.</p>
+        </div>
+        <!-- Dynamic message elements appended here -->
+      </div>
+
+      <!-- Typing Indicator -->
+      <div class="typing-indicator-bar hidden" id="typingIndicatorBar">
+        <span class="typing-dots">
+          <span></span><span></span><span></span>
+        </span>
+        <span class="typing-text" id="typingText">Someone is typing...</span>
+      </div>
+
+      <!-- File Staging Chip (when a file is chosen or dragged) -->
+      <div class="file-staging-preview hidden" id="fileStagingPreview">
+        <div class="staging-file-info">
+          <span class="file-icon" id="stagingFileIcon">📎</span>
+          <div class="staging-names">
+            <span class="staging-filename" id="stagingFileName">document.pdf</span>
+            <span class="staging-filesize" id="stagingFileSize">1.2 MB</span>
+          </div>
+        </div>
+        <button class="icon-btn cancel-stage-btn" id="cancelStageBtn" title="Remove attachment">✕</button>
+      </div>
+
+      <!-- Voice Recording Progress Bar -->
+      <div class="voice-recording-bar hidden" id="voiceRecordingBar">
+        <div class="recording-pulse"></div>
+        <span class="recording-time" id="recordingTimer">0:00</span>
+        <span class="recording-label">Recording audio note...</span>
+        <div class="recording-actions">
+          <button class="record-btn-cancel" id="cancelRecordingBtn" title="Discard recording">Cancel</button>
+          <button class="record-btn-send" id="sendRecordingBtn" title="Send audio clip">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+            Send Audio
+          </button>
+        </div>
+      </div>
+
+      <!-- Message Composer -->
+      <footer class="composer-footer">
+        <div class="composer-box">
+          <!-- File Attach Button -->
+          <input type="file" id="fileInput" class="hidden-file-input">
+          <button class="composer-icon-btn" id="attachFileBtn" title="Attach file or image">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+            </svg>
+          </button>
+
+          <!-- Voice Note Button -->
+          <button class="composer-icon-btn" id="recordVoiceBtn" title="Record Voice Note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+              <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+          </button>
+
+          <!-- Emoji Picker Toggle -->
+          <button class="composer-icon-btn" id="emojiPickerBtn" title="Emoji reactions">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+              <line x1="9" y1="9" x2="9.01" y2="9"></line>
+              <line x1="15" y1="9" x2="15.01" y2="9"></line>
+            </svg>
+          </button>
+
+          <!-- Main Input Textarea -->
+          <textarea
+            id="messageInput"
+            rows="1"
+            placeholder="Message #general (Enter to send, Shift+Enter for new line)..."
+            autocomplete="off"
+            spellcheck="true"
+          ></textarea>
+
+          <!-- Send Button -->
+          <button class="composer-send-btn" id="sendMessageBtn" title="Send Message">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Emoji Popover -->
+        <div class="emoji-popover hidden" id="emojiPopover">
+          <div class="emoji-grid" id="emojiGrid">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Drag & Drop Fullscreen Overlay -->
+  <div class="drag-drop-overlay hidden" id="dragDropOverlay">
+    <div class="drag-drop-modal">
+      <span class="drag-icon">📁</span>
+      <h3>Drop file to share on LAN</h3>
+      <p>Will be sent directly to the current chat</p>
+    </div>
+  </div>
+
+  <!-- Profile & Settings Modal -->
+  <div class="modal-overlay hidden" id="settingsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>User Profile & Network Settings</h3>
+        <button class="icon-btn modal-close-btn" id="closeSettingsBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="displayNameInput">Your Display Name</label>
+          <input type="text" id="displayNameInput" placeholder="e.g. Alice, Bob, Developer">
+        </div>
+
+        <div class="form-group">
+          <label>Avatar Emoji / Symbol</label>
+          <div class="avatar-selection-row" id="avatarSelectionRow">
+            <button class="avatar-choice selected" data-avatar="🦕">🦕</button>
+            <button class="avatar-choice" data-avatar="⚡">⚡</button>
+            <button class="avatar-choice" data-avatar="🚀">🚀</button>
+            <button class="avatar-choice" data-avatar="💻">💻</button>
+            <button class="avatar-choice" data-avatar="🦊">🦊</button>
+            <button class="avatar-choice" data-avatar="🦁">🦁</button>
+            <button class="avatar-choice" data-avatar="🐼">🐼</button>
+            <button class="avatar-choice" data-avatar="🤖">🤖</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="statusSelect">Availability Status</label>
+          <select id="statusSelect">
+            <option value="online">🟢 Online</option>
+            <option value="away">🟡 Away</option>
+            <option value="busy">🔴 Busy / Do Not Disturb</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="statusMessageInput">Status Message</label>
+          <input type="text" id="statusMessageInput" placeholder="e.g. Coding with Deno Desktop">
+        </div>
+
+        <div class="form-group">
+          <label>Detected Local Network Interfaces</label>
+          <div class="network-interfaces-box" id="networkInterfacesBox">
+            <div class="iface-entry">Detecting network interfaces...</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelSettingsBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveSettingsBtn">Save Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Direct Peer Connect Modal -->
+  <div class="modal-overlay hidden" id="directConnectModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Direct Peer Connect</h3>
+        <button class="icon-btn modal-close-btn" id="closeDirectConnectBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-help-text">Connect manually to a peer machine by entering its local IP address and port (e.g., if UDP broadcast is restricted on your Wi-Fi).</p>
+        <div class="form-group">
+          <label for="peerAddressInput">Peer IP and Port</label>
+          <input type="text" id="peerAddressInput" placeholder="192.168.1.50:4545" autocomplete="off">
+        </div>
+        <div class="connect-feedback hidden" id="connectFeedback"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelDirectConnectBtn">Cancel</button>
+        <button class="btn btn-primary" id="confirmDirectConnectBtn">Connect to Peer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subnet Scanner Modal -->
+  <div class="modal-overlay hidden" id="subnetScanModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Active LAN Subnet Scanner</h3>
+        <button class="icon-btn modal-close-btn" id="closeSubnetScanBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-help-text">Actively probes the local /24 subnet for other LAN Messenger instances listening on standard ports.</p>
+        <div class="scan-progress-area">
+          <button class="btn btn-primary" id="startSubnetScanBtn">Start LAN Scan</button>
+          <div class="scan-status-text" id="scanStatusText">Ready to scan</div>
+        </div>
+        <div class="scan-results-box" id="scanResultsBox">
+          <p class="no-results-text">No active scan running</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="doneSubnetScanBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Lightbox Modal -->
+  <div class="lightbox-overlay hidden" id="imageLightbox">
+    <button class="lightbox-close" id="closeLightboxBtn">✕</button>
+    <div class="lightbox-content">
+      <img id="lightboxImg" src="" alt="Enlarged view">
+      <div class="lightbox-actions">
+        <a id="lightboxDownloadBtn" href="#" download="lan-image.png" class="btn btn-primary">Download High-Res</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help & Info Modal -->
+  <div class="modal-overlay hidden" id="helpModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>About LAN Messenger 🦕</h3>
+        <button class="icon-btn modal-close-btn" id="closeHelpBtn">✕</button>
+      </div>
+      <div class="modal-body help-body">
+        <h4>Architecture Highlights</h4>
+        <ul>
+          <li><strong>Deno Desktop Native:</strong> Runs natively with <code>deno desktop</code> via OS webview bindings, zero Node.js and zero Bun.</li>
+          <li><strong>UDP Peer Discovery:</strong> Broadcasts heartbeats on UDP port 45450 for zero-configuration instant local discovery.</li>
+          <li><strong>Direct P2P LAN Delivery:</strong> Messages and file transfers route directly between peers via local HTTP & WebSockets.</li>
+          <li><strong>Subnet Fallback:</strong> Includes active subnet scanner and direct IP connect for environments with Wi-Fi AP isolation.</li>
+          <li><strong>High-Speed LAN Transfers:</strong> Share images, audio voice notes, and documents with zero cloud servers or third-party tracking.</li>
+        </ul>
+        <h4>Shortcuts</h4>
+        <ul>
+          <li><code>Enter</code>: Send message</li>
+          <li><code>Shift + Enter</code>: Insert line break</li>
+          <li><code>Ctrl/Cmd + F</code>: Search in chat</li>
+          <li><code>Esc</code>: Close dialogs / search</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="doneHelpBtn">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
