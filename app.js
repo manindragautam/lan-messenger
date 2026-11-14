@@ -38,6 +38,9 @@
 
   // DOM Elements Cache
   const el = {
+    appContainer: document.querySelector(".app-container"),
+    mobileBackBtn: document.getElementById("mobileBackBtn"),
+    mobileUnreadIndicator: document.getElementById("mobileUnreadIndicator"),
     // Branding & User
     networkBadge: document.getElementById("networkBadge"),
     networkAddressText: document.getElementById("networkAddressText"),
@@ -499,9 +502,29 @@
     }
   }
 
+  // Mobile View Toggling
+  function setMobileView(view) {
+    if (!el.appContainer) return;
+    if (view === "chat") {
+      el.appContainer.classList.add("mobile-chat-view");
+      el.appContainer.classList.remove("mobile-sidebar-view");
+      if (el.mobileUnreadIndicator) {
+        el.mobileUnreadIndicator.classList.add("hidden");
+      }
+    } else {
+      el.appContainer.classList.add("mobile-sidebar-view");
+      el.appContainer.classList.remove("mobile-chat-view");
+    }
+  }
+
   // Switch Active Channel or Direct Chat
   function switchChannel(channelId) {
     state.activeChannel = channelId;
+
+    // Switch to chat view on mobile screens
+    if (window.innerWidth <= 768) {
+      setMobileView("chat");
+    }
 
     // Clear unread count for this channel
     state.unreadCounts.set(channelId, 0);
@@ -1287,6 +1310,13 @@
       setTimeout(() => (el.networkAddressText.textContent = original), 1500);
     };
 
+    // Mobile Back Button
+    if (el.mobileBackBtn) {
+      el.mobileBackBtn.onclick = () => {
+        setMobileView("sidebar");
+      };
+    }
+
     // Global Key Shortcuts
     window.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
@@ -1313,6 +1343,34 @@
     restoreLocalData();
     setupEventListeners();
     connectWebSocket();
+
+    // Mobile View Setup
+    if (window.innerWidth <= 768) {
+      setMobileView("sidebar");
+    } else {
+      el.appContainer.classList.remove("mobile-sidebar-view", "mobile-chat-view");
+    }
+
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 768) {
+        el.appContainer.classList.remove("mobile-sidebar-view", "mobile-chat-view");
+      } else {
+        if (!el.appContainer.classList.contains("mobile-chat-view") && !el.appContainer.classList.contains("mobile-sidebar-view")) {
+          setMobileView("sidebar");
+        }
+      }
+    });
+
+    // Touch devices: tap on a message to toggle reaction action bar
+    document.addEventListener("click", (e) => {
+      const row = e.target.closest(".message-row");
+      document.querySelectorAll(".message-row.active-row").forEach((r) => {
+        if (r !== row) r.classList.remove("active-row");
+      });
+      if (row && !e.target.closest(".action-bar-btn")) {
+        row.classList.toggle("active-row");
+      }
+    });
   }
 
   window.addEventListener("DOMContentLoaded", init);
