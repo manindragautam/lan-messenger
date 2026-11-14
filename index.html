@@ -24,6 +24,8 @@
               <span id="networkAddressText">Detecting LAN...</span>
             </div>
           </div>
+          <!-- Close button for mobile slide-over drawer -->
+          <button class="icon-btn mobile-sidebar-close-btn" id="mobileSidebarCloseBtn" title="Close Sidebar">✕</button>
         </div>
       </div>
 
@@ -117,16 +119,21 @@
       </div>
     </aside>
 
+    <!-- Slide-over Backdrop for Mobile -->
+    <div class="sidebar-backdrop hidden" id="sidebarBackdrop"></div>
+
     <!-- Main Chat View Area -->
     <main class="chat-viewport">
       <!-- Chat Header -->
       <header class="chat-header">
-        <!-- Mobile back to sidebar button -->
-        <button class="mobile-nav-btn" id="mobileBackBtn" title="Back to Channels & Peers">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"></polyline>
+        <!-- Mobile Sidebar Slide-over Toggle Button -->
+        <button class="icon-btn mobile-sidebar-toggle-btn" id="mobileSidebarToggleBtn" title="Channels & Peers">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
           </svg>
-          <span class="mobile-nav-unread hidden" id="mobileUnreadIndicator"></span>
+          <span class="mobile-unread-badge hidden" id="mobileUnreadBadge"></span>
         </button>
 
         <div class="chat-info">

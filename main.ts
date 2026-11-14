@@ -361,7 +361,7 @@ function main() {
           if (msg.type === "CLIENT_HELLO") {
             const payload = (msg.payload || {}) as Record<string, unknown>;
             const isActuallyHost = Boolean(payload.isHost);
-            const clientId = String(payload.id || (isActuallyHost ? myPeerId : ("web_" + crypto.randomUUID().slice(0, 8))));
+            const clientId = isActuallyHost ? myPeerId : String(payload.id || ("web_" + crypto.randomUUID().slice(0, 8)));
             const clientName = String(payload.name || (isActuallyHost ? myDisplayName : ("WebUser-" + clientId.slice(-4))));
             const clientAvatar = String(payload.avatar || (isActuallyHost ? myAvatar : "🌐"));
             const clientStatus = (payload.status || "online") as "online" | "away" | "busy" | "offline";
@@ -709,14 +709,17 @@ function main() {
       // 2. Deliver to all other connected local clients (Desktop app or other web browser tabs)
       for (const [wsClient, client] of clientSessions.entries()) {
         if (wsClient !== senderWs && wsClient.readyState === WebSocket.OPEN) {
-          if (
+          const isPublic =
             message.channelId.startsWith("#") ||
             message.channelId === "general" ||
             message.channelId === "random" ||
-            message.channelId === "announcements" ||
+            message.channelId === "announcements";
+
+          const isDirectMatch =
             message.channelId === client.id ||
-            (message.channelId === senderId && client.isHost)
-          ) {
+            (client.isHost && (message.channelId === myPeerId || message.channelId === "host"));
+
+          if (isPublic || isDirectMatch) {
             wsClient.send(
               JSON.stringify({
                 type: "INCOMING_MESSAGE",
@@ -728,12 +731,13 @@ function main() {
       }
 
       // 3. Deliver to remote LAN peer instances (other computers running LAN Messenger)
-      if (
+      const isPublic =
         message.channelId.startsWith("#") ||
         message.channelId === "general" ||
         message.channelId === "random" ||
-        message.channelId === "announcements"
-      ) {
+        message.channelId === "announcements";
+
+      if (isPublic) {
         for (const peer of discoveredPeers.values()) {
           const isLocalSession = Array.from(clientSessions.values()).some((c) => c.id === peer.id);
           if (peer.id !== myPeerId && !isLocalSession && peer.status !== "offline") {
@@ -742,7 +746,7 @@ function main() {
         }
       } else {
         const isLocalSession = Array.from(clientSessions.values()).some((c) => c.id === message.channelId);
-        if (!isLocalSession) {
+        if (!isLocalSession && message.channelId !== myPeerId && message.channelId !== "host") {
           const targetPeer = discoveredPeers.get(message.channelId);
           if (targetPeer) {
             sendPeerHttpRequest(targetPeer, "/api/peer/message", message).catch((err) => {
@@ -774,7 +778,13 @@ function main() {
       }
 
       // Deliver to remote LAN peers
-      if (channelId.startsWith("#") || channelId === "general") {
+      const isPublicTyping =
+        channelId.startsWith("#") ||
+        channelId === "general" ||
+        channelId === "random" ||
+        channelId === "announcements";
+
+      if (isPublicTyping) {
         for (const peer of discoveredPeers.values()) {
           const isLocalSession = Array.from(clientSessions.values()).some((c) => c.id === peer.id);
           if (peer.id !== myPeerId && !isLocalSession && peer.status !== "offline") {
@@ -783,7 +793,7 @@ function main() {
         }
       } else {
         const isLocalSession = Array.from(clientSessions.values()).some((c) => c.id === channelId);
-        if (!isLocalSession) {
+        if (!isLocalSession && channelId !== myPeerId && channelId !== "host") {
           const targetPeer = discoveredPeers.get(channelId);
           if (targetPeer) {
             sendPeerHttpRequest(targetPeer, "/api/peer/typing", typingPayload).catch(() => {});

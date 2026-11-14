@@ -4,6 +4,70 @@
  */
 
 (() => {
+  // Safe UUID generator supporting non-secure LAN HTTP on mobile devices and browsers
+  function generateUUID() {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      try {
+        return crypto.randomUUID();
+      } catch {
+        // Fallback if blocked in non-secure context
+      }
+    }
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
+  // Safe clipboard copy supporting non-secure contexts (LAN HTTP on mobile)
+  function copyToClipboard(text) {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      navigator.clipboard.writeText(text).catch(() => {
+        fallbackCopyText(text);
+      });
+    } else {
+      fallbackCopyText(text);
+    }
+  }
+
+  function fallbackCopyText(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand("copy");
+    } catch {
+      // ignore
+    }
+    document.body.removeChild(ta);
+  }
+
+  globalThis.__copyText = (btn, text) => {
+    copyToClipboard(text);
+    if (btn) {
+      const orig = btn.textContent;
+      btn.textContent = "Copied!";
+      setTimeout(() => (btn.textContent = orig), 1500);
+    }
+  };
+
+  // Public Channels helper
+  const PUBLIC_CHANNELS = new Set(["general", "random", "announcements"]);
+  function isPublicChannel(channelId) {
+    if (!channelId) return false;
+    const clean = String(channelId).replace(/^#/, "");
+    return PUBLIC_CHANNELS.has(clean);
+  }
+  function normalizeChannel(channelId) {
+    if (!channelId) return "general";
+    return String(channelId).replace(/^#/, "");
+  }
+
   // Application State
   const state = {
     me: {
@@ -39,8 +103,11 @@
   // DOM Elements Cache
   const el = {
     appContainer: document.querySelector(".app-container"),
-    mobileBackBtn: document.getElementById("mobileBackBtn"),
-    mobileUnreadIndicator: document.getElementById("mobileUnreadIndicator"),
+    sidebar: document.querySelector(".sidebar"),
+    sidebarBackdrop: document.getElementById("sidebarBackdrop"),
+    mobileSidebarToggleBtn: document.getElementById("mobileSidebarToggleBtn"),
+    mobileSidebarCloseBtn: document.getElementById("mobileSidebarCloseBtn"),
+    mobileUnreadBadge: document.getElementById("mobileUnreadBadge"),
     // Branding & User
     networkBadge: document.getElementById("networkBadge"),
     networkAddressText: document.getElementById("networkAddressText"),
@@ -136,7 +203,7 @@
   function playAudioChime(type = "incoming") {
     if (!state.soundEnabled) return;
     try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const AudioCtx = globalThis.AudioContext || globalThis.webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
 
@@ -222,7 +289,9 @@
         obj[ch] = msgs.slice(-80);
       }
       localStorage.setItem("lan_messages_cache", JSON.stringify(obj));
-    } catch {}
+    } catch {
+      // Storage might be full or disabled in private browsing
+    }
   }
 
   // Connect to Backend WebSocket
@@ -240,7 +309,7 @@
       }
 
       // Determine if this is the native Desktop webview or an external Web browser client
-      const isDesktop = !window.location.search.includes("web=1") &&
+      const isDesktop = !globalThis.location.search.includes("web=1") &&
         (navigator.userAgent.includes("Deno") || (location.hostname === "127.0.0.1" && !localStorage.getItem("lan_web_client_id")));
 
       let myId = localStorage.getItem("lan_client_id");
@@ -315,8 +384,8 @@
       updateMyProfileUI();
     } else if (type === "INCOMING_MESSAGE") {
       const message = payload;
-      const targetChannel = message.channelId.startsWith("#") || message.channelId === "general"
-        ? message.channelId.replace(/^#/, "")
+      const targetChannel = isPublicChannel(message.channelId)
+        ? normalizeChannel(message.channelId)
         : (message.senderId === state.me.id ? message.channelId : message.senderId);
 
       addMessageToChannel(targetChannel, message);
@@ -334,8 +403,8 @@
       saveMessagesToStorage();
     } else if (type === "MESSAGE_SENT") {
       const message = payload;
-      const targetChannel = message.channelId.startsWith("#") || message.channelId === "general"
-        ? message.channelId.replace(/^#/, "")
+      const targetChannel = isPublicChannel(message.channelId)
+        ? normalizeChannel(message.channelId)
         : message.channelId;
 
       addMessageToChannel(targetChannel, message);
@@ -409,7 +478,7 @@
           <span>🏷️ <strong>mDNS Device Name:</strong></span>
           <a href="${state.me.mdnsUrl}" target="_blank" class="iface-link">${state.me.mdnsUrl}</a>
         </div>
-        <button class="copy-url-btn" onclick="navigator.clipboard.writeText('${state.me.mdnsUrl}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy', 1500);">Copy</button>
+        <button class="copy-url-btn" onclick="window.__copyText(this, '${state.me.mdnsUrl}')">Copy</button>
       `;
       el.networkInterfacesBox.appendChild(mdnsDiv);
     }
@@ -425,7 +494,7 @@
             <span>📱 <strong>LAN IPv4 Address:</strong></span>
             <a href="${ipUrl}" target="_blank" class="iface-link">${ipUrl}</a>
           </div>
-          <button class="copy-url-btn" onclick="navigator.clipboard.writeText('${ipUrl}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy', 1500);">Copy</button>
+          <button class="copy-url-btn" onclick="window.__copyText(this, '${ipUrl}')">Copy</button>
         `;
         el.networkInterfacesBox.appendChild(div);
       }
@@ -440,7 +509,7 @@
         <span>💻 <strong>Local Machine:</strong></span>
         <a href="${localUrl}" target="_blank" class="iface-link">${localUrl}</a>
       </div>
-      <button class="copy-url-btn" onclick="navigator.clipboard.writeText('${localUrl}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy', 1500);">Copy</button>
+      <button class="copy-url-btn" onclick="window.__copyText(this, '${localUrl}')">Copy</button>
     `;
     el.networkInterfacesBox.appendChild(localDiv);
   }
@@ -502,29 +571,24 @@
     }
   }
 
-  // Mobile View Toggling
-  function setMobileView(view) {
-    if (!el.appContainer) return;
-    if (view === "chat") {
-      el.appContainer.classList.add("mobile-chat-view");
-      el.appContainer.classList.remove("mobile-sidebar-view");
-      if (el.mobileUnreadIndicator) {
-        el.mobileUnreadIndicator.classList.add("hidden");
-      }
-    } else {
-      el.appContainer.classList.add("mobile-sidebar-view");
-      el.appContainer.classList.remove("mobile-chat-view");
-    }
+  // Mobile Slide-over Sidebar Drawer Controls
+  function openMobileSidebar() {
+    if (el.sidebar) el.sidebar.classList.add("mobile-open");
+    if (el.sidebarBackdrop) el.sidebarBackdrop.classList.remove("hidden");
+    if (el.mobileUnreadBadge) el.mobileUnreadBadge.classList.add("hidden");
+  }
+
+  function closeMobileSidebar() {
+    if (el.sidebar) el.sidebar.classList.remove("mobile-open");
+    if (el.sidebarBackdrop) el.sidebarBackdrop.classList.add("hidden");
   }
 
   // Switch Active Channel or Direct Chat
   function switchChannel(channelId) {
     state.activeChannel = channelId;
 
-    // Switch to chat view on mobile screens
-    if (window.innerWidth <= 768) {
-      setMobileView("chat");
-    }
+    // Automatically close mobile slide-over sidebar upon selecting channel/peer
+    closeMobileSidebar();
 
     // Clear unread count for this channel
     state.unreadCounts.set(channelId, 0);
@@ -562,12 +626,19 @@
   }
 
   function updateUnreadBadges() {
+    let totalUnread = 0;
     document.querySelectorAll(".unread-pill").forEach((pill) => {
       const channel = pill.dataset.unread;
       const count = state.unreadCounts.get(channel) || 0;
+      totalUnread += count;
       pill.textContent = String(count);
       pill.classList.toggle("hidden", count === 0);
     });
+
+    if (el.mobileUnreadBadge) {
+      el.mobileUnreadBadge.textContent = totalUnread > 99 ? "99+" : String(totalUnread);
+      el.mobileUnreadBadge.classList.toggle("hidden", totalUnread === 0);
+    }
   }
 
   // Render Messages for Active Channel
@@ -703,37 +774,47 @@
 
   // Send Message Action
   function sendMessage() {
-    const text = el.messageInput.value.trim();
-    if (!text && !state.stagedFile) return;
+    try {
+      const text = el.messageInput.value.trim();
+      if (!text && !state.stagedFile) return;
 
-    const payload = {
-      id: crypto.randomUUID(),
-      channelId: state.activeChannel,
-      content: text,
-      type: state.stagedFile
-        ? (state.stagedFile.type.startsWith("image/") ? "image" : "file")
-        : "text",
-    };
-
-    if (state.stagedFile) {
-      payload.fileInfo = {
-        id: crypto.randomUUID(),
-        name: state.stagedFile.name,
-        size: state.stagedFile.size,
-        mimeType: state.stagedFile.type,
-        dataUrl: state.stagedFile.dataUrl,
+      const payload = {
+        id: generateUUID(),
+        channelId: state.activeChannel,
+        content: text,
+        type: state.stagedFile
+          ? (state.stagedFile.type.startsWith("image/") ? "image" : "file")
+          : "text",
       };
-      clearStagedFile();
-    }
 
-    // Send through WebSocket to backend
-    if (ws && ws.readyState === WebSocket.OPEN) {
+      if (state.stagedFile) {
+        payload.fileInfo = {
+          id: generateUUID(),
+          name: state.stagedFile.name,
+          size: state.stagedFile.size,
+          mimeType: state.stagedFile.type,
+          dataUrl: state.stagedFile.dataUrl,
+        };
+        clearStagedFile();
+      }
+
+      // Ensure WebSocket connection is live
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        console.warn("[Send] WebSocket not connected (readyState=" + (ws ? ws.readyState : "null") + "). Reconnecting...");
+        alert("Not connected to LAN Host. Reconnecting now...");
+        connectWebSocket();
+        return;
+      }
+
       ws.send(JSON.stringify({ type: "SEND_MESSAGE", payload }));
-    }
 
-    el.messageInput.value = "";
-    el.messageInput.style.height = "auto";
-    sendTypingIndicator(false);
+      el.messageInput.value = "";
+      el.messageInput.style.height = "auto";
+      sendTypingIndicator(false);
+    } catch (err) {
+      console.error("[Send] Failed to send message:", err);
+      alert("Error sending message: " + (err instanceof Error ? err.message : String(err)));
+    }
   }
 
   // Typing Notification Logic
@@ -799,7 +880,7 @@
     }
   }
 
-  window.__toggleReaction = (messageId, emoji) => {
+  globalThis.__toggleReaction = (messageId, emoji) => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(
         JSON.stringify({
@@ -811,7 +892,7 @@
   };
 
   // Audio Playback in Chat Bubble
-  window.__toggleAudioPlay = (btn, audioUrl) => {
+  globalThis.__toggleAudioPlay = (btn, audioUrl) => {
     const bubble = btn.closest(".audio-player-bubble");
     const scrubber = bubble.querySelector(".audio-scrubber");
     const label = bubble.querySelector(".audio-time-label");
@@ -861,7 +942,7 @@
         if (e.data.size > 0) state.audioChunks.push(e.data);
       };
 
-      state.mediaRecorder.onstop = async () => {
+      state.mediaRecorder.onstop = () => {
         stream.getTracks().forEach((track) => track.stop());
         const audioBlob = new Blob(state.audioChunks, { type: "audio/webm" });
         const reader = new FileReader();
@@ -901,22 +982,31 @@
   }
 
   function sendVoiceClip(dataUrl) {
-    const payload = {
-      id: crypto.randomUUID(),
-      channelId: state.activeChannel,
-      content: "",
-      type: "audio",
-      fileInfo: {
-        id: crypto.randomUUID(),
-        name: `voice-note-${Date.now()}.webm`,
-        size: Math.round((dataUrl.length * 3) / 4),
-        mimeType: "audio/webm",
-        dataUrl,
-      },
-    };
+    try {
+      const payload = {
+        id: generateUUID(),
+        channelId: state.activeChannel,
+        content: "",
+        type: "audio",
+        fileInfo: {
+          id: generateUUID(),
+          name: `voice-note-${Date.now()}.webm`,
+          size: Math.round((dataUrl.length * 3) / 4),
+          mimeType: "audio/webm",
+          dataUrl,
+        },
+      };
 
-    if (ws && ws.readyState === WebSocket.OPEN) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        alert("Not connected to LAN Host. Reconnecting...");
+        connectWebSocket();
+        return;
+      }
+
       ws.send(JSON.stringify({ type: "SEND_MESSAGE", payload }));
+    } catch (err) {
+      console.error("[Send] Failed to send voice clip:", err);
+      alert("Error sending voice note: " + (err instanceof Error ? err.message : String(err)));
     }
   }
 
@@ -947,7 +1037,7 @@
   }
 
   // Lightbox Viewer
-  window.__openLightbox = (src, name) => {
+  globalThis.__openLightbox = (src, name) => {
     el.lightboxImg.src = src;
     el.lightboxDownloadBtn.href = src;
     el.lightboxDownloadBtn.download = name || "image.png";
@@ -989,7 +1079,7 @@
         <div class="code-block-wrapper">
           <div class="code-header">
             <span>${lang || "code"}</span>
-            <button class="copy-code-btn" onclick="navigator.clipboard.writeText(this.closest('.code-block-wrapper').querySelector('pre').innerText); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy', 1500);">Copy</button>
+            <button class="copy-code-btn" onclick="window.__copyText(this, this.closest('.code-block-wrapper').querySelector('pre').innerText)">Copy</button>
           </div>
           <pre><code>${code.trim()}</code></pre>
         </div>
@@ -1084,7 +1174,19 @@
     });
 
     // Send button & Input shortcuts
-    el.sendMessageBtn.onclick = sendMessage;
+    let lastSendTimestamp = 0;
+    const triggerSend = (e) => {
+      if (e) e.preventDefault();
+      const now = Date.now();
+      if (now - lastSendTimestamp < 250) return;
+      lastSendTimestamp = now;
+      sendMessage();
+    };
+
+    if (el.sendMessageBtn) {
+      el.sendMessageBtn.onclick = triggerSend;
+      el.sendMessageBtn.addEventListener("pointerdown", triggerSend);
+    }
     el.messageInput.onkeydown = (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -1284,7 +1386,7 @@
     el.doneHelpBtn.onclick = () => el.helpModal.classList.add("hidden");
 
     // Drag and Drop Files over Entire Window
-    window.addEventListener("dragenter", (e) => {
+    globalThis.addEventListener("dragenter", (e) => {
       e.preventDefault();
       el.dragDropOverlay.classList.remove("hidden");
     });
@@ -1304,21 +1406,33 @@
     // Copy network address on badge click
     el.networkBadge.onclick = () => {
       const urlToCopy = el.networkAddressText.dataset.fullUrl || `http://${el.networkAddressText.textContent}`;
-      navigator.clipboard.writeText(urlToCopy);
+      copyToClipboard(urlToCopy);
       const original = el.networkAddressText.textContent;
       el.networkAddressText.textContent = "Copied URL!";
       setTimeout(() => (el.networkAddressText.textContent = original), 1500);
     };
 
-    // Mobile Back Button
-    if (el.mobileBackBtn) {
-      el.mobileBackBtn.onclick = () => {
-        setMobileView("sidebar");
+    // Mobile slide-over drawer sidebar controls
+    if (el.mobileSidebarToggleBtn) {
+      el.mobileSidebarToggleBtn.onclick = (e) => {
+        e.stopPropagation();
+        openMobileSidebar();
+      };
+    }
+    if (el.mobileSidebarCloseBtn) {
+      el.mobileSidebarCloseBtn.onclick = (e) => {
+        e.stopPropagation();
+        closeMobileSidebar();
+      };
+    }
+    if (el.sidebarBackdrop) {
+      el.sidebarBackdrop.onclick = () => {
+        closeMobileSidebar();
       };
     }
 
     // Global Key Shortcuts
-    window.addEventListener("keydown", (e) => {
+    globalThis.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         el.settingsModal.classList.add("hidden");
         el.directConnectModal.classList.add("hidden");
@@ -1345,14 +1459,14 @@
     connectWebSocket();
 
     // Mobile View Setup
-    if (window.innerWidth <= 768) {
+    if (globalThis.innerWidth <= 768) {
       setMobileView("sidebar");
     } else {
       el.appContainer.classList.remove("mobile-sidebar-view", "mobile-chat-view");
     }
 
-    window.addEventListener("resize", () => {
-      if (window.innerWidth > 768) {
+    globalThis.addEventListener("resize", () => {
+      if (globalThis.innerWidth > 768) {
         el.appContainer.classList.remove("mobile-sidebar-view", "mobile-chat-view");
       } else {
         if (!el.appContainer.classList.contains("mobile-chat-view") && !el.appContainer.classList.contains("mobile-sidebar-view")) {
@@ -1373,5 +1487,5 @@
     });
   }
 
-  window.addEventListener("DOMContentLoaded", init);
+  globalThis.addEventListener("DOMContentLoaded", init);
 })();
